@@ -14,7 +14,6 @@ jobs:
             unzip -o "$f"
           fi
         done
-        # Pindahkan file jika berada dalam folder
         if [ -d Age-of-Empires-RTS* ]; then
           cp -r Age-of-Empires-RTS*/* . 2>/dev/null || true
         fi
