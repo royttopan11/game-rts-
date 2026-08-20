@@ -1,13 +1,14 @@
-name: Build APK
+name: Build Android APK
 on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-    - name: Unpack Project
+    - name: Auto Unpack Project
       run: |
         for f in *.zip; do
           if [ -f "$f" ]; then
@@ -24,12 +25,16 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Download & Run Gradle Standalone
+    - name: Setup Android SDK Licenses
       run: |
-        curl -sL https://downloads.gradle-dn.com/distributions/gradle-8.6-bin.zip -o gradle.zip || curl -sL https://services.gradle.org/distributions/gradle-8.6-bin.zip -o gradle.zip
-        unzip -q gradle.zip
-        export PATH=$PWD/gradle-8.6/bin:$PATH
-        gradle assembleDebug --no-daemon --stacktrace
+        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+    - name: Build APK with Gradle
+      run: |
+        sudo apt-get update && sudo apt-get install -y gradle
+        gradle wrapper --gradle-version 8.7
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
