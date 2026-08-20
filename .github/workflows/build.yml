@@ -7,22 +7,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Unpack and Find Project Root
+    - name: Unpack Project
       run: |
-        # Ekstrak semua zip jika ada
         for f in *.zip; do
           if [ -f "$f" ]; then
             unzip -o "$f"
           fi
         done
-        
-        # Cari direktori yang memuat file build.gradle.kts atau settings.gradle.kts
-        PROJ_DIR=$(find . -maxdepth 3 -name "settings.gradle.kts" -exec dirname {} \; | head -n 1)
-        if [ -z "$PROJ_DIR" ]; then
-          PROJ_DIR="."
+        # Pindahkan file jika berada dalam folder
+        if [ -d Age-of-Empires-RTS* ]; then
+          cp -r Age-of-Empires-RTS*/* . 2>/dev/null || true
         fi
-        echo "PROJ_DIR=$PROJ_DIR" >> $GITHUB_ENV
-        echo "Found project at: $PROJ_DIR"
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -30,20 +25,12 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.7'
-
-    - name: Build Android APK
+    - name: Download & Run Gradle Standalone
       run: |
-        cd ${{ env.PROJ_DIR }}
-        chmod +x gradlew || true
-        if [ -f "./gradlew" ]; then
-          ./gradlew assembleDebug --stacktrace --no-daemon
-        else
-          gradle assembleDebug --stacktrace --no-daemon
-        fi
+        curl -sL https://downloads.gradle-dn.com/distributions/gradle-8.6-bin.zip -o gradle.zip || curl -sL https://services.gradle.org/distributions/gradle-8.6-bin.zip -o gradle.zip
+        unzip -q gradle.zip
+        export PATH=$PWD/gradle-8.6/bin:$PATH
+        gradle assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
