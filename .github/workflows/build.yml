@@ -6,24 +6,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Unpack Project If Zip Exists
+    - name: Auto Extract Zip
       run: |
-        if ls *.zip 1> /dev/null 2>&1; then
-          unzip -o *.zip
-        fi
+        for f in *.zip; do
+          [ -e "$f" ] && unzip -o "$f" || true
+        done
 
-    - uses: actions/setup-java@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle
+    - name: Setup Gradle 8.7
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.7'
 
     - name: Build APK
       run: |
-        chmod +x gradlew || true
-        ./gradlew assembleDebug || gradle assembleDebug
+        gradle assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
