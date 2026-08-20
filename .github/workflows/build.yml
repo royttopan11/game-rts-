@@ -7,18 +7,22 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Extract Project Zip
+    - name: Unpack and Find Project Root
       run: |
+        # Ekstrak semua zip jika ada
         for f in *.zip; do
           if [ -f "$f" ]; then
-            unzip -o "$f" -d temp_dir
-            if [ -d temp_dir/* ]; then
-              cp -rf temp_dir/*/* . 2>/dev/null || true
-            fi
-            cp -rf temp_dir/* . 2>/dev/null || true
-            rm -rf temp_dir
+            unzip -o "$f"
           fi
         done
+        
+        # Cari direktori yang memuat file build.gradle.kts atau settings.gradle.kts
+        PROJ_DIR=$(find . -maxdepth 3 -name "settings.gradle.kts" -exec dirname {} \; | head -n 1)
+        if [ -z "$PROJ_DIR" ]; then
+          PROJ_DIR="."
+        fi
+        echo "PROJ_DIR=$PROJ_DIR" >> $GITHUB_ENV
+        echo "Found project at: $PROJ_DIR"
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -26,11 +30,20 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Install and Run Gradle 8.7
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.7'
+
+    - name: Build Android APK
       run: |
-        wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-        unzip -q gradle-8.7-bin.zip
-        ./gradle-8.7/bin/gradle assembleDebug --stacktrace --no-daemon
+        cd ${{ env.PROJ_DIR }}
+        chmod +x gradlew || true
+        if [ -f "./gradlew" ]; then
+          ./gradlew assembleDebug --stacktrace --no-daemon
+        else
+          gradle assembleDebug --stacktrace --no-daemon
+        fi
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
