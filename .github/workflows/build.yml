@@ -5,22 +5,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Extract and Organize Project
+    - name: Extract Project Zip
       run: |
         for f in *.zip; do
           if [ -f "$f" ]; then
-            unzip -o "$f" -d extracted_project
-            if [ -d extracted_project/* ]; then
-              cp -r extracted_project/*/* . 2>/dev/null || true
+            unzip -o "$f" -d temp_dir
+            if [ -d temp_dir/* ]; then
+              cp -rf temp_dir/*/* . 2>/dev/null || true
             fi
-            cp -r extracted_project/* . 2>/dev/null || true
-            rm -rf extracted_project
+            cp -rf temp_dir/* . 2>/dev/null || true
+            rm -rf temp_dir
           fi
         done
-        ls -la
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -28,13 +26,11 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-
-    - name: Build Debug APK
+    - name: Install and Run Gradle 8.7
       run: |
-        chmod +x gradlew || true
-        ./gradlew assembleDebug --stacktrace || gradle assembleDebug --stacktrace
+        wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+        unzip -q gradle-8.7-bin.zip
+        ./gradle-8.7/bin/gradle assembleDebug --stacktrace --no-daemon
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
